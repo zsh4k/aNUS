@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# Obtener nombre de usuario como argumento de línea de comandos
+u="$1"
+
+# Validar si el usuario ya existe
+if id "$u" >/dev/null 2>&1; then
+    echo "El usuario $u ya existe. Por favor, elija otro nombre de usuario."
+    exit 1
+fi
+
+# Crear usuario sin contraseña
+useradd -m "$u"
+
+# Verificar si se creó correctamente
+if [ $? -eq 0 ]; then
+    # Añadir al grupo sudo
+    usermod -aG sudo "$u"
+
+    # Verificar si se proporcionó una contraseña como segundo argumento
+    if [ ! -z "$2" ]; then
+        password="$2"
+        # Establecer la contraseña utilizando el comando chpasswd
+        echo "$u:$password" | chpasswd
+        echo "El usuario $u ha sido creado y añadido al grupo sudo con la contraseña especificada."
+    else
+        echo "El usuario $u ha sido creado y añadido al grupo sudo sin contraseña."
+    fi
+else
+    echo "Error al crear el usuario $u."
+fi
+
+# Configurar sudo para que no solicite contraseña al usar "sudo su"
+if [ -z "$2" ]; then
+    echo "$u ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/"$u"
+fi
+
